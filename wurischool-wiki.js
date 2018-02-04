@@ -7,7 +7,8 @@
 function start() {
     var mark = document.getElementById("textarea");
     var lexerTokens = lexer.process(mark.value);
-    renderer.process( lexerTokens );
+    var output = document.getElementById("output");
+    output.innerHTML = parser.process( lexerTokens );
 }
 
 var lexer = new Lexer();
@@ -22,13 +23,12 @@ function Lexer() {
             // 이스케이프
             escape: /\\/,    
         },
-        
         // 라인검출
         line: {
             title: /^([#]{1,6})\s(.+)$/, // 타이틀
             list: /^(\s?)-\s(.+)$/, // 리스트 or 서브 리스트
         },
-        // 고정 ( 라인검출 )
+        // 고정 ( 라인검출, 마지막으로 로드해야함 )
         static: {
             contents: /^\[\[\[목차\]\]\]$/, // 자동생성 목차
         },
@@ -81,7 +81,7 @@ function Lexer() {
             else if( block = regExp.static.contents.exec( line ) ) {
                 tokens.push({
                     type: 'contents'
-                })
+                });
             }
             
             /* 일반문자열 */
@@ -149,14 +149,12 @@ function Lexer() {
                     tokens.push({
                         type: 'text',
                         value: line.substring(nTmp, line.length)
-                    })
+                    });
                 }
             }
-            
             tokens.push({
                 type: 'nextLine'
-            })
-            
+            });
             idx++;
         }
     
@@ -172,14 +170,84 @@ function Lexer() {
 
 var renderer = new Renderer();
 function Renderer() {
-    
-    this.process = function( tokens ) {
-        
+    this.title = function( value, level ) {
+        return '<h'+level+'>'+value+'</h'+level+'>';
     }
-    
+    this.list = function( value, level ) {
+        return '<li>'+value+'</li>';
+    }
+    this.contents = function() {
+        return '<span>-목차-</span>';
+    }
+    this.bold = function( value ) {
+        return '<span>'+value+'</span>';
+    }
+    this.localLink = function( value ) {
+        return '<a href="/wiki/'+encodeURI(value)+'">'+value+'</a>';
+    }
+    this.strikethrough = function( value ) {
+        return '<span style="text-decoration:line-through">'+value+'</span>';
+    }
+    this.underline = function( value ) {
+        return '<span style="text-decoration:underline">'+value+'</span>';
+    }
+    this.italic = function( value ) {
+        return '<span style="font-style: italic">'+value+'</span>';
+    }
+    this.text = function( value ) {
+        return value;
+    }
+    this.nextLine = function() {
+        return '';
+    }
 }
 
 var parser = new Parser();
 function Parser() {
+    this.process = function( tokens ) {
+        
+//        tokens.forEach( function( e ) {
+//          ... 
+//        });
+        
+        var html = "";
+        
+        tokens.forEach( function( e ) {
+            html += renderHtml( e );
+            console.log(renderHtml( e ));
+        });
+        
+        return html;
+    }
+    
+    function renderHtml( e ) {
+        switch( e.type ) {
+            /* line */
+            case 'title':
+                return renderer.title( e.value, e.level );
+            case 'list':
+                return renderer.list( e.value, e.level );
+            /* static */
+            case 'contents':
+                return renderer.contents();
+            /* cover */
+            case 'bold':
+                return renderer.bold( e.value );
+            case 'localLink':
+                return renderer.localLink( e.value );
+            case 'strikethrough':
+                return renderer.strikethrough( e.value );
+            case 'underline':
+                return renderer.underline( e.value );
+            case 'italic':
+                return renderer.italic( e.value );
+            /* text */
+            case 'text':
+                return renderer.text( e.value );
+            /* next line */
+            case 'nextLine':
+                return renderer.nextLine();
+        }
+    }
     
 }
