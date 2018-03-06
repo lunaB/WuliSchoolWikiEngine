@@ -55,22 +55,22 @@ body {
     margin-right: 10px;
     content: ":";
 }
-.ww-list-level-0 {
+.ww-list-level-1 {
     padding-left: 5px;
 }
-.ww-list-level-0:before{
+.ww-list-level-1:before{
     background-color: #333;
 }
-.ww-list-level-1 {
+.ww-list-level-2 {
     padding-left: 20px;
 }
-.ww-list-level-1:before {
+.ww-list-level-2:before {
     background-color: #666;
 }
-.ww-list-level-2 {
+.ww-list-level-3 {
     padding-left: 35px;
 }
-.ww-list-level-2:before {
+.ww-list-level-3:before {
     background-color: #999;
 }
 
@@ -98,4 +98,24 @@ body {
 /* italic */
 .ww-italic {
     font-style: italic;
+}
+
+/* contents (개발중) */
+.ww-contents {
+    border: 1px solid rgba(0,0,0,.125);
+    width: 100%;
+    display: block;
+}
+.ww-contents-title {
+    font-size: 16px;
+}
+.ww-contents-item {
+    display: block;
+}
+.ww-contents-item-level-1 {
+    counter-reset: ww-contents-cnt-2;
+}
+.ww-contents-item-level-1:before {
+    counter-increment: ww-contents-cnt-1;
+    /* content: "<a href='#ww-texthead-level-"counter(ww-contents-cnt-1)"'>"counter(ww-contents-cnt-1)"</a>"; */
 }

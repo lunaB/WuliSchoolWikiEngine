@@ -25,19 +25,20 @@ var lexer = new Lexer();
 function Lexer() {
 
     /*
-    
         - 문법가이드 -
         
         # abc           &#35;
         ## abc
         ### abc
         - abc           &#45;
+         - abc
+          - abc
         ** abc **       &#42;
         [[ abc ]]       &#91; &#93;
         ~~ abc ~~       &#126;
         __ abc __       &#95;
         // abc //       &#47;
-        
+        :: abc ::       &#58;
     */
     
     // [정규식] 검출 순위별로 나열한다.
@@ -51,11 +52,11 @@ function Lexer() {
         // 라인검출
         line: {
             title: /^((&#35;){1,3})\s(.+)$/, // 타이틀
-            list: /^((&#45;){1,3})\s(.+)$/, // 리스트
+            list: /^((\s){0,3})&#45;\s(.+)$/, // 리스트
         },
         // 고정 ( 라인검출, 마지막으로 로드해야함 )
         static: {
-            contents: /^\[\[\[목차\]\]\]$/, // 자동생성 목차
+            contents: /^&#58;&#58;[\s]{0,1}목차[\s]{0,1}&#58;&#58;$/, // 자동생성 목차
         },
         // 텍스트검출 ( 감싸는 문법 )
         cover: {
@@ -99,7 +100,7 @@ function Lexer() {
             if( block = regExp.line.title.exec( line ) ) {
                 tokens.push({
                     type: 'title',
-                    level: block[1].length/5,
+                    level: block[1].length/5, // &#35; 5글자기 때문에 나눔
                     // target: block[2],
                     value: block[3]
                 });
@@ -107,7 +108,7 @@ function Lexer() {
             else if( block = regExp.line.list.exec( line ) ) {
                 tokens.push({
                     type: 'list',
-                    level: block[1].length/5-1,
+                    level: block[1].length+1, // 공백이 0개부터 시작
                     // target: block[2],
                     value: block[3]
                 });
@@ -182,25 +183,30 @@ function Lexer() {
                             value: e.value
                         });
                     });
-                    tokens.push({
-                        type: 'text',
-                        value: line.substring(nTmp, line.length)
-                    });
+                    if(nTmp < line.length){
+                        tokens.push({
+                            type: 'text',
+                            value: line.substring(nTmp, line.length)
+                        });
+                    }
                 }else {
+                    if(line.trim().length != 0) {
+                        tokens.push({
+                            type: 'text',
+                            value: line.substring(0, line.length)
+                        });
+                    }
+                }
+                if(line.trim().length != 0) {
                     tokens.push({
-                        type: 'text',
-                        value: line.substring(0, line.length)
+                        type: 'nextLine'
                     });
                 }
-                tokens.push({
-                    type: 'nextLine'
-                });
             }
             idx++;
         }
     
         console.log("---------------------------------------");
-        console.log(tokens);
         tokens.forEach( function( e ) {
         	if(e.value !== undefined){
         		e.value = xssfilter(e.value);
@@ -212,16 +218,90 @@ function Lexer() {
     }
 }
 
+var parser = new Parser();
+function Parser() {
+    
+    var tokenData;
+    
+    this.process = function( tokens ) {
+        
+//        tokens.forEach( function( e ) {
+//          ... 
+//        });
+        
+        var html = "";
+        
+        tokenData = tokens;
+        
+        tokens.forEach( function( e ) {
+            html += renderHtml( e );
+        });
+        
+        return html;
+    }
+    
+    function renderHtml( e ) {
+        switch( e.type ) {
+            /* line */
+            case 'title':
+                return renderer.title( e.value, e.level );
+            case 'list':
+                return renderer.list( e.value, e.level );
+            /* static */
+            case 'contents':
+                var list = [];
+                tokenData.forEach( function( e ) {
+                    if(e.type === "title") {
+                        list.push( e );
+                    }
+                });
+                return renderer.contents( list );
+            /* cover */
+            case 'bold':
+                return renderer.bold( e.value );
+            case 'localLink':
+                return renderer.localLink( e.value );
+            case 'strikethrough':
+                return renderer.strikethrough( e.value );
+            case 'underline':
+                return renderer.underline( e.value );
+            case 'italic':
+                return renderer.italic( e.value );
+            /* text */
+            case 'text':
+                return renderer.text( e.value );
+            /* next line */
+            case 'nextLine':
+                return renderer.nextLine();
+        }
+    }
+    
+}
+
 var renderer = new Renderer();
 function Renderer() {
     this.title = function( value, level ) {
-        return '<span class="ww-texthead ww-texthead-level-'+level+'">'+value+'</span>';
+        return '<span class="ww-texthead ww-texthead-level-'+level+'" id="ww-title-"'+level+'>'+value+'</span>';
     }
     this.list = function( value, level ) {
         return '<span class="ww-list ww-list-level-'+level+'">'+value+'</span>';
     }
-    this.contents = function() {
-        return '<span>-목차준비중-</span>';
+    this.contents = function( list ) {
+        var html = `
+            <span class="ww-contents">
+                <span class="ww-contents-title">목차</span>
+                <div class="ww-contents-item-wrap">
+            `;
+        list.forEach( function( e ) {
+            html += `
+                    <span class="ww-contents-item ww-contents-item-level-`+e.level+`">`+e.value+`</span>
+            `;
+        });
+        html += `
+                </div>
+            </span>
+        `;
+        return html;
     }
     this.bold = function( value ) {
         return '<span class="ww-bold">'+value+'</span>';
@@ -244,54 +324,4 @@ function Renderer() {
     this.nextLine = function() {
         return '<br>';
     }
-}
-
-var parser = new Parser();
-function Parser() {
-    this.process = function( tokens ) {
-        
-//        tokens.forEach( function( e ) {
-//          ... 
-//        });
-        
-        var html = "";
-        
-        tokens.forEach( function( e ) {
-            html += renderHtml( e );
-            console.log(renderHtml( e ));
-        });
-        
-        return html;
-    }
-    
-    function renderHtml( e ) {
-        switch( e.type ) {
-            /* line */
-            case 'title':
-                return renderer.title( e.value, e.level );
-            case 'list':
-                return renderer.list( e.value, e.level );
-            /* static */
-            case 'contents':
-                return renderer.contents();
-            /* cover */
-            case 'bold':
-                return renderer.bold( e.value );
-            case 'localLink':
-                return renderer.localLink( e.value );
-            case 'strikethrough':
-                return renderer.strikethrough( e.value );
-            case 'underline':
-                return renderer.underline( e.value );
-            case 'italic':
-                return renderer.italic( e.value );
-            /* text */
-            case 'text':
-                return renderer.text( e.value );
-            /* next line */
-            case 'nextLine':
-                return renderer.nextLine();
-        }
-    }
-    
 }
