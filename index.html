@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="wurischool-wiki.js"></script>
+    <link rel="stylesheet" href="wurischool-wiki.css">
+    <script>
+    window.onload = function() {
+        document.getElementById("hiddenContent").value = `
+&#42;&#42;??? : 심심해서 만들었습니다.&#42;&#42;
+&#35; 양디위키
+양디위키지롱롱다리
+&#126;&#126; 버그많음 주의 &#126;&#126;
+&#35;&#35; 대문 문서 목록
+위키를 편집할때 사용되는 문법에 대한 문서. &#91;&#91;양디위키:문법&#93;&#93;
+카테고리에 대한 문서. &#91;&#91;양디위키:카테고리&#93;&#93;
+유저권한에 대한 문서. &#91;&#91;양디위키:권한&#93;&#93;
+양디학생들에 대한 문서. &#91;&#91;양디위키:학생&#93;&#93;
+
+&#35;&#35; 새로운 문서 만드는법
+만들고 싶은 문서가있다면 그 문서이름으로 검색합니다. 그러면 그 문서가 이미 있을 경우에는 문서가 뜨게되고 문서가 없는 경우 새문서를 생성할수 있는 페이지가 나옵니다.
+새문서를만들고 편집해 주시면 됩니다.
+
+&#45; 나영채 잘생겼다
+최승우도 잘생김
+
+
+`;
+        var mark = document.getElementById("hiddenContent");
+        if(mark === null) return;
+        var lexerTokens = lexer.process(mark.value);
+        var output = document.getElementById("content");
+        output.innerHTML = parser.process( lexerTokens );
+    }
+    </script>
+</head>
+<body>
+<textarea name="" id="hiddenContent" cols="30" rows="10" style="width: 100%;"></textarea>
+    <div id="content"></div>
+</body>
+</html>

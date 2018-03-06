@@ -1,0 +1,93 @@
+/*
+    luna20617.gmail.com
+    github.com/lunab
+    나영채
+
+    모든 css 변수와 클래스명과 아이디는 ww-로 시작합니다.
+*/
+
+body {
+    counter-reset: ww-texthead-cnt-1;
+}
+
+/* texthead */
+.ww-texthead {
+    border-bottom: 2px solid #223;
+    padding: 5px 3px;
+    display: block;
+    font-weight: bold;
+    margin: 20px 0px;;
+}
+.ww-texthead-level-1 {
+    counter-reset: ww-texthead-cnt-2;
+    font-size: 32px;
+}
+.ww-texthead-level-1:before {
+    counter-increment: ww-texthead-cnt-1;
+    content: counter(ww-texthead-cnt-1)". ";
+}
+.ww-texthead-level-2 {
+    counter-reset: ww-texthead-cnt-3;
+    font-size: 24px;
+}
+.ww-texthead-level-2:before {
+    counter-increment: ww-texthead-cnt-2;
+    content: counter(ww-texthead-cnt-1) "." counter(ww-texthead-cnt-2)". ";
+}
+.ww-texthead-level-3:before {
+    counter-increment: ww-texthead-cnt-3;
+    content: counter(ww-texthead-cnt-1) "." counter(ww-texthead-cnt-2)"." counter(ww-texthead-cnt-3)". ";
+}
+.ww-texthead-level-3 {
+    font-size: 18px;
+}
+
+/* list */
+.ww-list {
+    list-style-type: circle;
+    display: block;
+}
+.ww-list-level-0 {
+    
+}
+.ww-list:before {
+    display: inline-block;
+    padding: 2px 10px;
+    vertical-align: 18%;
+    font-size: 11px;
+}
+.ww-list-level-0:before {
+    content: "●";
+}
+.ww-list-level-1 {
+    padding-left: 25px;
+}
+.ww-list-level-1:before {
+    content: "◆";
+}
+
+/* bold */
+.ww-bold {
+    font-weight: bold;
+}
+
+/* link */
+.ww-link {
+    
+}
+
+/* strikethrough */
+.ww-strikethrough {
+    text-decoration:line-through;
+}
+
+/* underline */
+.ww-underline {
+    text-decoration:underline;
+}
+
+
+/* italic */
+.ww-italic {
+    font-style: italic;
+}

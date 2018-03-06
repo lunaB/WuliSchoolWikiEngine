@@ -11,10 +11,35 @@ function start() {
     output.innerHTML = parser.process( lexerTokens );
 }
 
+/* real test */
+//window.onload = function() {
+//	var mark = document.getElementById("hiddenContent");
+//	if(mark === null) return;
+//	var lexerTokens = lexer.process(mark.value);
+//    var output = document.getElementById("content");
+//    output.innerHTML = parser.process( lexerTokens );
+//}
+
 var lexer = new Lexer();
 
 function Lexer() {
 
+    /*
+    
+        - 문법가이드 -
+        
+        # abc           &#35;
+        ## abc
+        ### abc
+        - abc           &#45;
+        ** abc **       &#42;
+        [[ abc ]]       &#91; &#93;
+        ~~ abc ~~       &#126;
+        __ abc __       &#95;
+        // abc //       &#47;
+        
+    */
+    
     // [정규식] 검출 순위별로 나열한다.
     var regExp = {
         
@@ -25,8 +50,8 @@ function Lexer() {
         },
         // 라인검출
         line: {
-            title: /^([#]{1,6})\s(.+)$/, // 타이틀
-            list: /^(\s?)-\s(.+)$/, // 리스트 or 서브 리스트
+            title: /^((&#35;){1,3})\s(.+)$/, // 타이틀
+            list: /^((&#45;){1})\s(.+)$/, // 리스트
         },
         // 고정 ( 라인검출, 마지막으로 로드해야함 )
         static: {
@@ -34,11 +59,11 @@ function Lexer() {
         },
         // 텍스트검출 ( 감싸는 문법 )
         cover: {
-            bold: /""(.+?)""/g, // 두껍게
-            localLink: /\[\[(.+?)\]\]/g, // 로컬 링크
-            strikethrough: /~~(.+?)~~/g, // 취소선
-            underline: /__(.+?)__/g, // 밑줄
-            italic: /\/\/(.+?)\/\//g, // 기울게 
+            bold: /&#42;&#42;(.+?)&#42;&#42;/g, // 두껍게
+            localLink: /&#91;&#91;(.+?)&#93;&#93;/g, // 로컬 링크
+            strikethrough: /&#126;&#126;(.+?)&#126;&#126;/g, // 취소선
+            underline: /&#95;&#95;(.+?)&#95;&#95;/g, // 밑줄
+            italic: /&#47;&#47;(.+?)&#47;&#47;/g, // 기울게 
         },
         // 일반 텍스트 ( 감싸는 문법에서 검출될 첫 특수기호 추가 )
         common: {
@@ -47,11 +72,20 @@ function Lexer() {
         // 함수
         // 변수
     };
-
+    
+    function xssfilter( text ) {
+//    	var res = text
+//    		.replace(/;/g, "&#59;")
+//    		.replace(/</g, "&#60;")
+//    		.replace(/>/g, "&#62;")
+//    		.replace(/\\/g, "&#92;");
+//    	return res;
+        return text;
+    }
+    
     // [메인] 
     this.process = function( text ) {
-
-        var lines = text.split( "\n" );
+        var lines = text.trim().split( "\n" );
         var tokens = [];
         var idx = 0;
         
@@ -65,15 +99,17 @@ function Lexer() {
             if( block = regExp.line.title.exec( line ) ) {
                 tokens.push({
                     type: 'title',
-                    level: block[1].length,
-                    value: block[2]
+                    level: block[1].length/5,
+                    // target: block[2],
+                    value: block[3]
                 });
             }
             else if( block = regExp.line.list.exec( line ) ) {
                 tokens.push({
                     type: 'list',
-                    level: block[1].length,
-                    value: block[2]
+                    level: block[1].length/5-1,
+                    // target: block[2],
+                    value: block[3]
                 });
             }
             
@@ -150,20 +186,28 @@ function Lexer() {
                         type: 'text',
                         value: line.substring(nTmp, line.length)
                     });
+                }else {
+                    tokens.push({
+                        type: 'text',
+                        value: line.substring(0, line.length)
+                    });
                 }
+                tokens.push({
+                    type: 'nextLine'
+                });
             }
-            tokens.push({
-                type: 'nextLine'
-            });
             idx++;
         }
     
         console.log("---------------------------------------");
         console.log(tokens);
         tokens.forEach( function( e ) {
+        	if(e.value !== undefined){
+        		e.value = xssfilter(e.value);
+        	}
             console.log(e);
         });
-        
+        console.log(tokens);
         return tokens;
     }
 }
@@ -171,34 +215,34 @@ function Lexer() {
 var renderer = new Renderer();
 function Renderer() {
     this.title = function( value, level ) {
-        return '<h'+level+'>'+value+'</h'+level+'>';
+        return '<span class="ww-texthead ww-texthead-level-'+level+'">'+value+'</span>';
     }
     this.list = function( value, level ) {
-        return '<li>'+value+'</li>';
+        return '<span class="ww-list ww-list-level-'+level+'">'+value+'</span>';
     }
     this.contents = function() {
-        return '<span>-목차-</span>';
+        return '<span>-목차준비중-</span>';
     }
     this.bold = function( value ) {
-        return '<span>'+value+'</span>';
+        return '<span class="ww-bold">'+value+'</span>';
     }
     this.localLink = function( value ) {
-        return '<a href="/wiki/'+encodeURI(value)+'">'+value+'</a>';
+        return '<a class="ww-link" href="/wiki/'+encodeURI(value)+'">'+value+'</a>';
     }
     this.strikethrough = function( value ) {
-        return '<span style="text-decoration:line-through">'+value+'</span>';
+        return '<span class="ww-strikethrough">'+value+'</span>';
     }
     this.underline = function( value ) {
-        return '<span style="text-decoration:underline">'+value+'</span>';
+        return '<span class="ww-underline">'+value+'</span>';
     }
     this.italic = function( value ) {
-        return '<span style="font-style: italic">'+value+'</span>';
+        return '<span class="ww-italic">'+value+'</span>';
     }
     this.text = function( value ) {
         return value;
     }
     this.nextLine = function() {
-        return '';
+        return '<br>';
     }
 }
 
